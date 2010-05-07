@@ -26,6 +26,7 @@ class AMQPException extends Exception
     public function __construct($reply_code, $reply_text, $method_sig)
     {
         parent::__construct(NULL,0);
+		$this->message = get_class($this).": $reply_code: $reply_text";
 
         $this->amqp_reply_code = $reply_code;
         $this->amqp_reply_text = $reply_text;

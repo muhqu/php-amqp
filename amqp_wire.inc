@@ -499,7 +499,7 @@ class GenericContent
      * Look for additional properties in the 'properties' dictionary,
      * and if present - the 'delivery_info' dictionary.
      */
-    public function get($name)
+    public function get($name, $default = NULL)
     {
         if(array_key_exists($name,$this->properties))
             return $this->properties[$name];
@@ -508,7 +508,9 @@ class GenericContent
             if(array_key_exists($name,$this->delivery_info))
                 return $this->delivery_info[$name];
 
-        throw new Exception("No such property");
+		if ($default === NULL)
+        	throw new Exception("No such property");
+		return $default;
     }
 
 

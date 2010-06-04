@@ -194,12 +194,12 @@ class AbstractChannel
             return call_user_func(array($this,$amqp_method), $args, $content);
     }
 
-    function next_frame()
+    function next_frame($timeoutcheck = null)
     {
         $this->debug_msg("waiting for a new frame");
         if($this->frame_queue != NULL)
             return array_pop($this->frame_queue);
-        return $this->connection->wait_channel($this->channel_id);
+        return $this->connection->wait_channel($this->channel_id, $timeoutcheck);
     }
 
     protected function send_method_frame($method_sig, $args="")
@@ -257,9 +257,10 @@ class AbstractChannel
      * method.
      * 
      * @param array $allowed_methods Methods to wait for, null waits for any method
+     * @param function $timeoutcheck a function / closure thats been called when AMQPReader is not retrieving anything new
      * @return mixed
      */
-    public function wait($allowed_methods=NULL)
+    public function wait($allowed_methods=NULL, $timeoutcheck=NULL)
     {
         if($allowed_methods)
             $this->debug_msg("waiting for " . implode(", ", $allowed_methods));
@@ -286,7 +287,7 @@ class AbstractChannel
         // No deferred methods?  wait for new ones
         while(true)
         {
-            $frm = $this->next_frame();
+            $frm = $this->next_frame($timeoutcheck);
             $frame_type = $frm[0];
             $payload = $frm[1];
 
@@ -603,10 +604,9 @@ class AMQPConnection extends AbstractChannel
      * @return array
      * @throws Exception On Framing error
      */
-    protected function wait_frame()
+    protected function wait_frame($timeoutcheck = null)
     {
-        
-        $frame_type = $this->input->read_octet();
+        $frame_type = $this->input->with_timeoutcheck($timeoutcheck)->read_octet($timeoutcheck);
         
         $channel = $this->input->read_short();
         $size = $this->input->read_long();
@@ -626,11 +626,11 @@ class AMQPConnection extends AbstractChannel
      * @param int $channel_id
      * @return array
      */
-    protected function wait_channel($channel_id)
+    protected function wait_channel($channel_id, $timeoutcheck = null)
     {
         while(true)
         {
-            list($frame_type, $frame_channel, $payload) = $this->wait_frame();
+            list($frame_type, $frame_channel, $payload) = $this->wait_frame($timeoutcheck);
             
             if($frame_channel == $channel_id)
                 return array($frame_type, $payload);

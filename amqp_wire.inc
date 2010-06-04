@@ -231,6 +231,9 @@ class AMQPWriter
 
 class AMQPReader
 {
+
+	private $timeoutcheck = null;
+
     public function __construct($str, $sock=NULL)
     {
         $this->str = $str;
@@ -242,6 +245,11 @@ class AMQPReader
         if(!function_exists("bcmul"))
             throw new Exception("'bc math' module required");
     }
+
+	public function with_timeoutcheck($timeoutcheck) {
+		$this->timeoutcheck = $timeoutcheck;
+		return $this;
+	}
 
     public function close()
     {
@@ -262,11 +270,25 @@ class AMQPReader
             $res = '';
             $read = 0;
 
-            while ($read < $n && (false !== ($buf = fread($this->sock, $n - $read))))
-            {
-                $read += strlen($buf);
-                $res .= $buf;
-            }
+			if ($this->timeoutcheck != null) {
+				// a reading loop with idle-checking 
+           	 	while ($read < $n && (false !== ($buf = fread($this->sock, $n - $read))))
+	            {
+	                $read += strlen($buf);
+	                $res .= $buf;
+					if ($read == 0 && $n == 1 && $res == '') {
+						call_user_func($this->timeoutcheck);
+					}
+	            }
+				$this->timeoutcheck = null;
+			} else {
+				// a reading loop w/o idle checking... migth save some cycles.. 
+           	 	while ($read < $n && (false !== ($buf = fread($this->sock, $n - $read))))
+	            {
+	                $read += strlen($buf);
+	                $res .= $buf;
+	            }
+			}
 
             if(strlen($res)!=$n)
                 throw new Exception ("Error reading data. Recevived " .

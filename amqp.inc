@@ -275,6 +275,7 @@ class AbstractChannel
             if($allowed_methods==NULL || in_array($method_sig, $allowed_methods))
             {
                 unset($this->method_queue[$qk]);
+				global $METHOD_NAME_MAP;
                 $this->debug_msg("Executing queued method: $method_sig: " .
                           $METHOD_NAME_MAP[methodSig($method_sig)]);
 

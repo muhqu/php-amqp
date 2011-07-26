@@ -275,7 +275,7 @@ class AbstractChannel
             if($allowed_methods==NULL || in_array($method_sig, $allowed_methods))
             {
                 unset($this->method_queue[$qk]);
-				global $METHOD_NAME_MAP;
+                global $METHOD_NAME_MAP;
                 $this->debug_msg("Executing queued method: $method_sig: " .
                           $METHOD_NAME_MAP[methodSig($method_sig)]);
 
@@ -426,7 +426,7 @@ class AMQPConnection extends AbstractChannel
             {
                 throw new Exception ("Error Connecting to server($errno): $errstr ");
             }
-            stream_set_timeout($this->sock, $read_write_timeout);
+            stream_set_timeout($this->sock,$read_write_timeout);
             stream_set_blocking($this->sock, 1);
             $this->input = new AMQPReader(null, $this->sock);
 
@@ -692,6 +692,7 @@ class AMQPConnection extends AbstractChannel
                     break;
                 case 'F':
                     $val = '(' . self::dump_table($value[1]) . ')';
+		    break;
                 case 'T':
                     $val = date('Y-m-d H:i:s', $value[1]);
                     break;
@@ -1583,6 +1584,15 @@ class AMQPChannel extends AbstractChannel
         $msg = $this->wait();
     }
 
+
+    public function tx_commit()
+    {
+        $this->send_method_frame(array(90, 20));
+        return $this->wait(array(
+                               "90,21"    //Channel.tx_commit_ok
+                           ));
+    }
+    
     /**
      * confirm a successful commit
      */

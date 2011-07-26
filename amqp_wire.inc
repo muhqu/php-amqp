@@ -251,7 +251,7 @@ class AMQPReader
         if(!function_exists("bcmul"))
             throw new Exception("'bc math' module required");
             
-        $this->buffer_read_timeout = 5; // in seconds
+        $this->buffer_read_timeout = null; // in seconds
     }
 
 	public function with_timeoutcheck($timeoutcheck) {
@@ -279,8 +279,8 @@ class AMQPReader
             $read = 0;
             
             $start = time();
-            while($read < $n && !feof($this->sock) &&
-                  (false !== ($buf = fread($this->sock, $n - $read))))
+            while ($read < $n && (false !== ($buf = $this->sock->read($n - $read)))
+             && ($this->buffer_read_timeout === null || (time() - $start) < $this->buffer_read_timeout))
             {
                 if ($buf == '')
                 {
